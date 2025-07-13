@@ -158,24 +158,26 @@ export default function App() {
 
     return (
         <ThemeContext.Provider value={theme}>
-            <div className={`${theme.bg} min-h-screen p-4 md:p-8 font-sans`}>
+            <div className={`${theme.bg} min-h-screen p-2 sm:p-4 md:p-8 font-sans`}>
                 <div className="max-w-7xl mx-auto">
+                    {/* The header now uses flex-col on mobile and md:flex-row on medium screens and up */}
                     <header className="flex flex-col md:flex-row justify-between items-center mb-6">
-                        <div>
-                            <h1 className={`text-4xl font-bold ${theme.header}`}>RinkSync</h1>
+                        <div className="text-center md:text-left">
+                            <h1 className={`text-3xl sm:text-4xl font-bold ${theme.header}`}>RinkSync</h1>
                         </div>
-                        <div className="flex items-center gap-4 mt-4 md:mt-0">
+                        {/* User controls also stack and have adjusted margins for mobile */}
+                        <div className="flex items-center flex-wrap justify-center gap-2 sm:gap-4 mt-4 md:mt-0">
                             {user ? (
                                 <>
-                                    <button onClick={() => { setSelectedEvent(null); setSelectedDate(new Date()); setIsModalOpen(true); }} className={`flex items-center gap-2 px-6 py-3 font-semibold rounded-lg shadow-md transition-colors ${theme.primaryButton}`}><Plus size={20} /> New Event</button>
-                                    <button onClick={() => setIsSettingsModalOpen(true)} className={`flex items-center gap-2 px-4 py-3 font-semibold rounded-lg transition-colors ${theme.secondaryButton}`}><Settings size={20} /></button>
+                                    <button onClick={() => { setSelectedEvent(null); setSelectedDate(new Date()); setIsModalOpen(true); }} className={`flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base font-semibold rounded-lg shadow-md transition-colors ${theme.primaryButton}`}><Plus size={20} /> New Event</button>
+                                    <button onClick={() => setIsSettingsModalOpen(true)} className={`flex items-center gap-2 p-2 sm:px-4 sm:py-3 font-semibold rounded-lg transition-colors ${theme.secondaryButton}`}><Settings size={20} /></button>
                                     <div className="flex items-center gap-3">
                                         <img src={user.photoURL} alt={user.displayName} className="w-10 h-10 rounded-full border-2 border-gray-300" />
-                                        <span className={`hidden md:block font-semibold ${theme.header}`}>
+                                        <span className={`hidden sm:block font-semibold ${theme.header}`}>
                                             Hi, {user.displayName ? user.displayName.split(' ')[0] : 'User'}!
                                         </span>
                                     </div>
-                                    <button onClick={handleSignOut} className={`flex items-center gap-2 px-4 py-3 font-semibold rounded-lg transition-colors ${theme.secondaryButton}`}><LogOut size={20} /></button>
+                                    <button onClick={handleSignOut} className={`flex items-center gap-2 p-2 sm:px-4 sm:py-3 font-semibold rounded-lg transition-colors ${theme.secondaryButton}`}><LogOut size={20} /></button>
                                 </>
                             ) : (
                                 <button onClick={handleGoogleSignIn} className={`flex items-center gap-2 px-6 py-3 font-semibold rounded-lg shadow-md transition-colors ${theme.primaryButton}`}><LogIn size={20} /> Sign in with Google</button>

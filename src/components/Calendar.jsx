@@ -4,7 +4,7 @@ import { MONTH_NAMES, WEEK_DAYS, getSeason, dateToISO } from '../constants/appCo
 
 // By wrapping CalendarDay in React.memo, we prevent it from re-rendering
 // if its specific props (like events for that day) haven't changed,
-// even if the parent Calendar component re-renders.
+// even if the parent Calendar component re-renders. This is the biggest performance win.
 const CalendarDay = React.memo(({ dayDate, type, getEventsForDate, playerConfig, theme, ...props }) => {
     const dayEvents = getEventsForDate(dayDate);
     const isToday = dateToISO(new Date()) === dateToISO(dayDate);
@@ -42,7 +42,8 @@ const CalendarDay = React.memo(({ dayDate, type, getEventsForDate, playerConfig,
     );
 });
 
-export const Calendar = ({ view, currentDate, setCurrentDate, events, playerConfig, theme, ...props }) => {
+// We create the original component here
+const CalendarComponent = ({ view, currentDate, setCurrentDate, events, playerConfig, theme, ...props }) => {
     const changeDate = (amount) => {
         const newDate = new Date(currentDate);
         if (view === 'week') newDate.setDate(newDate.getDate() + (amount * 7));
@@ -121,3 +122,6 @@ export const Calendar = ({ view, currentDate, setCurrentDate, events, playerConf
         </div>
     );
 };
+
+// Then we export the memoized version of the component.
+export const Calendar = React.memo(CalendarComponent);
