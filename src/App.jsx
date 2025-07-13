@@ -1,7 +1,7 @@
 import React from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { collection, doc, onSnapshot, setDoc, deleteDoc, query } from 'firebase/firestore';
-import { Plus, Settings, LogIn } from 'lucide-react';
+import { Plus, LogIn } from 'lucide-react'; // Settings icon is no longer needed here
 
 // Import all our modules
 import { auth, db, googleProvider, appId } from './firebase/config';
@@ -12,7 +12,7 @@ import { EventModal } from './components/EventModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { FilterControls } from './components/FilterControls';
-import { UserMenu } from './components/UserMenu'; // Import the new UserMenu
+import { UserMenu } from './components/UserMenu';
 
 export const ThemeContext = React.createContext();
 
@@ -23,7 +23,7 @@ export default function App() {
     const [themeName, setThemeName] = React.useState('classic');
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = React.useState(false);
-    const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false); // State for the new menu
+    const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
     const [selectedEvent, setSelectedEvent] = React.useState(null);
     const [selectedDate, setSelectedDate] = React.useState(null);
     const [filters, setFilters] = React.useState({ player: 'all', eventType: 'all' });
@@ -107,11 +107,18 @@ export default function App() {
                         <div className="flex items-center gap-4">
                             {user ? (
                                 <div className="relative">
-                                    <button onClick={() => setIsSettingsModalOpen(true)} className={`p-2 rounded-full transition-colors ${theme.secondaryButton}`}><Settings size={22} /></button>
                                     <button onClick={() => setIsUserMenuOpen(prev => !prev)} className="w-10 h-10 rounded-full border-2 border-white/50 ring-2 ring-transparent hover:ring-indigo-400 transition-all">
                                         <img src={user.photoURL} alt={user.displayName} className="w-full h-full rounded-full" />
                                     </button>
-                                    {isUserMenuOpen && <UserMenu user={user} onSignOut={handleSignOut} onClose={() => setIsUserMenuOpen(false)} theme={theme} />}
+                                    {isUserMenuOpen && (
+                                        <UserMenu
+                                            user={user}
+                                            onSignOut={handleSignOut}
+                                            onSettingsClick={() => setIsSettingsModalOpen(true)}
+                                            onClose={() => setIsUserMenuOpen(false)}
+                                            theme={theme}
+                                        />
+                                    )}
                                 </div>
                             ) : (
                                 <button onClick={handleGoogleSignIn} className={`flex items-center gap-2 px-6 py-3 font-semibold rounded-lg shadow-md transition-colors ${theme.primaryButton}`}><LogIn size={20} /> Sign in</button>
@@ -123,7 +130,6 @@ export default function App() {
                             <FilterControls filters={filters} onFilterChange={handleFilterChange} view={view} setView={setView} playerConfig={playerConfig} theme={theme} />
                             <Calendar events={filteredEvents} onDateClick={handleDateClick} onEventClick={handleEventClick} onEventDelete={handleDeleteRequest} view={view} currentDate={currentDate} setCurrentDate={setCurrentDate} playerConfig={playerConfig} theme={theme} />
 
-                            {/* Floating Action Button for "New Event" */}
                             <button
                                 onClick={() => { setSelectedEvent(null); setSelectedDate(new Date()); setIsModalOpen(true); }}
                                 className={`fixed bottom-8 right-8 w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 ${theme.primaryButton}`}

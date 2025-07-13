@@ -1,9 +1,9 @@
 import React from 'react';
-import { LogOut, X } from 'lucide-react';
+import { LogOut, X, Settings } from 'lucide-react'; // Import Settings icon
 
 // This is the new UserMenu component. It's a dropdown that shows user info and a sign-out button.
 // It's designed to be positioned absolutely relative to the user avatar button in the header.
-export const UserMenu = React.memo(({ user, onSignOut, onClose, theme }) => {
+export const UserMenu = React.memo(({ user, onSignOut, onSettingsClick, onClose, theme }) => {
     if (!user) return null;
 
     return (
@@ -23,6 +23,17 @@ export const UserMenu = React.memo(({ user, onSignOut, onClose, theme }) => {
                 </div>
             </div>
             <div className="w-full h-px bg-black/10 my-1"></div>
+            {/* New Settings Button */}
+            <button
+                onClick={() => {
+                    onSettingsClick();
+                    onClose(); // Close menu after clicking
+                }}
+                className={`w-full flex items-center gap-3 p-2 rounded-lg text-left text-sm font-semibold hover:bg-black/10 transition-colors`}
+            >
+                <Settings size={16} />
+                Settings
+            </button>
             <button
                 onClick={onSignOut}
                 className={`w-full flex items-center gap-3 p-2 rounded-lg text-left text-sm font-semibold hover:bg-black/10 transition-colors`}

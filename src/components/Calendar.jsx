@@ -2,16 +2,12 @@ import React from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { MONTH_NAMES, WEEK_DAYS, getSeason, dateToISO } from '../constants/appConstants';
 
-// The CalendarDay component is memoized for performance.
 const CalendarDay = React.memo(({ dayDate, type, getEventsForDate, playerConfig, theme, ...props }) => {
     const dayEvents = getEventsForDate(dayDate);
     const isToday = dateToISO(new Date()) === dateToISO(dayDate);
-    const dateStr = dateToISO(dayDate);
 
     return (
-        // Added theme.cellHoverBg for a consistent hover effect.
         <div className={`border rounded-lg p-1.5 min-h-[120px] flex flex-col relative transition-colors ${theme.cellHoverBg} ${type === 'current' ? theme.dayCell : theme.otherMonthCell}`} onClick={() => type === 'current' && props.onDateClick(dayDate)}>
-            {/* The "Today" highlight is now a prominent colored circle around the date number. */}
             <span className={`font-bold w-8 h-8 flex items-center justify-center mb-1 ${isToday ? `bg-indigo-600 text-white rounded-full` : ''}`}>
                 {dayDate.getDate()}
             </span>
@@ -19,6 +15,7 @@ const CalendarDay = React.memo(({ dayDate, type, getEventsForDate, playerConfig,
                 {dayEvents.map(event => {
                     const eventStartDate = event.startDate || event.date;
                     const isMultiDay = event.endDate && event.endDate > eventStartDate;
+                    const dateStr = dateToISO(dayDate);
                     const isStart = isMultiDay && dateStr === eventStartDate;
                     const isEnd = isMultiDay && dateStr === event.endDate;
                     const isMiddle = isMultiDay && !isStart && !isEnd;
@@ -45,11 +42,14 @@ const CalendarDay = React.memo(({ dayDate, type, getEventsForDate, playerConfig,
 });
 
 const CalendarComponent = ({ view, currentDate, setCurrentDate, events, playerConfig, theme, ...props }) => {
-    // Functions like changeDate, getEventsForDate, etc., remain the same.
     const changeDate = (amount) => {
         const newDate = new Date(currentDate);
-        if (view === 'week') newDate.setDate(newDate.getDate() + (amount * 7));
-        else newDate.setMonth(newDate.getMonth() + (amount * (view === 'month' ? 1 : view === '2-month' ? 2 : 3)));
+        if (view === 'week') {
+            newDate.setDate(newDate.getDate() + (amount * 7));
+        } else {
+            const monthIncrement = view === 'month' ? 1 : view === '2-month' ? 2 : 3;
+            newDate.setMonth(newDate.getMonth() + (amount * monthIncrement));
+        }
         setCurrentDate(newDate);
     };
 
@@ -64,35 +64,45 @@ const CalendarComponent = ({ view, currentDate, setCurrentDate, events, playerCo
                 const recurrenceEndDate = event.recurring.endDate ? new Date(event.recurring.endDate) : null;
                 if (checkDate < recurrenceStartDate || (recurrenceEndDate && checkDate > recurrenceEndDate)) return false;
                 if (event.recurring.type === 'weekly' && recurrenceStartDate.getDay() === checkDate.getDay()) return true;
-                if (event.recurring.type === 'bi-weekly' && recurrenceStartDate.getDay() === checkDate.getDay()) return (Math.floor(Math.abs(checkDate - recurrenceStartDate) / (1000 * 3600 * 24 * 7))) % 2 === 0;
+                if (event.recurring.type === 'bi-weekly' && recurrenceStartDate.getDay() === checkDate.getDay()) {
+                    const weekDiff = Math.floor((checkDate - recurrenceStartDate) / (1000 * 3600 * 24 * 7));
+                    return weekDiff % 2 === 0;
+                }
             }
             return false;
         });
+    };
+
+    const getCalendarGrid = (dateForMonth) => {
+        const firstDay = new Date(dateForMonth.getFullYear(), dateForMonth.getMonth(), 1).getDay();
+        const daysInMonth = new Date(dateForMonth.getFullYear(), dateForMonth.getMonth() + 1, 0).getDate();
+        const prevMonth = new Date(dateForMonth.getFullYear(), dateForMonth.getMonth(), 0);
+        const grid = [];
+        for (let i = 0; i < firstDay; i++) {
+            grid.push({ date: new Date(prevMonth.getFullYear(), prevMonth.getMonth(), prevMonth.getDate() - firstDay + i + 1), type: 'prev' });
+        }
+        for (let i = 1; i <= daysInMonth; i++) {
+            grid.push({ date: new Date(dateForMonth.getFullYear(), dateForMonth.getMonth(), i), type: 'current' });
+        }
+        const lastDay = new Date(dateForMonth.getFullYear(), dateForMonth.getMonth(), daysInMonth).getDay();
+        for (let i = 1; i <= 6 - lastDay; i++) {
+            grid.push({ date: new Date(dateForMonth.getFullYear(), dateForMonth.getMonth() + 1, i), type: 'next' });
+        }
+        return grid;
     };
 
     const renderMonths = () => {
         const numMonths = view === 'month' ? 1 : view === '2-month' ? 2 : 3;
         return Array.from({ length: numMonths }).map((_, i) => {
             const dateForMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-            const season = getSeason(dateForMonth);
-            const firstDay = new Date(dateForMonth.getFullYear(), dateForMonth.getMonth(), 1).getDay();
-            const daysInMonth = new Date(dateForMonth.getFullYear(), dateForMonth.getMonth() + 1, 0).getDate();
-            const prevMonth = new Date(dateForMonth.getFullYear(), dateForMonth.getMonth(), 0);
-            const grid = [];
-            for (let i = 0; i < firstDay; i++) grid.push({ date: new Date(prevMonth.getFullYear(), prevMonth.getMonth(), prevMonth.getDate() - firstDay + i + 1), type: 'prev' });
-            for (let i = 1; i <= daysInMonth; i++) grid.push({ date: new Date(dateForMonth.getFullYear(), dateForMonth.getMonth(), i), type: 'current' });
-            const lastDay = new Date(dateForMonth.getFullYear(), dateForMonth.getMonth(), daysInMonth).getDay();
-            for (let i = 1; i <= 6 - lastDay; i++) grid.push({ date: new Date(dateForMonth.getFullYear(), dateForMonth.getMonth() + 1, i), type: 'next' });
-
             return (
                 <div key={i} className="flex-1">
-                    {/* The new, improved title section. */}
-                    <div className="flex items-center gap-4 mb-4">
-                        <h3 className={`text-2xl font-bold ${theme.modalTextColor}`}>{MONTH_NAMES[dateForMonth.getMonth()]} {dateForMonth.getFullYear()}</h3>
-                        {season.name && <span className={`px-3 py-1 text-xs font-semibold rounded-full ${season.color} text-gray-700`}>{season.name}</span>}
-                    </div>
                     <div className="grid grid-cols-7 gap-1 text-center font-semibold text-gray-600 text-sm mb-2">{WEEK_DAYS.map(day => <div key={day}>{day}</div>)}</div>
-                    <div className="grid grid-cols-7 gap-1">{grid.map(({ date, type }, index) => <CalendarDay key={index} dayDate={date} type={type} getEventsForDate={getEventsForDate} playerConfig={playerConfig} theme={theme} {...props} />)}</div>
+                    <div className="grid grid-cols-7 gap-1">
+                        {getCalendarGrid(dateForMonth).map(({ date, type }, index) =>
+                            <CalendarDay key={index} dayDate={date} type={type} getEventsForDate={getEventsForDate} playerConfig={playerConfig} theme={theme} {...props} />
+                        )}
+                    </div>
                 </div>
             );
         });
@@ -101,29 +111,58 @@ const CalendarComponent = ({ view, currentDate, setCurrentDate, events, playerCo
     const renderWeekView = () => {
         const startOfWeek = new Date(currentDate);
         startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-        const weekDays = Array.from({length: 7}).map((_, i) => { const day = new Date(startOfWeek); day.setDate(day.getDate() + i); return day; });
+        const weekDays = Array.from({length: 7}).map((_, i) => {
+            const day = new Date(startOfWeek);
+            day.setDate(day.getDate() + i);
+            return day;
+        });
         return (
             <div>
-                <div className="grid grid-cols-7 gap-1 text-center font-semibold text-gray-600 text-sm mb-2">{weekDays.map(d => <div key={d.toString()}>{WEEK_DAYS[d.getDay()]} {d.getDate()}</div>)}</div>
-                <div className="grid grid-cols-7 gap-1">{weekDays.map(dayDate => <CalendarDay key={dayDate.toString()} dayDate={dayDate} type="current" getEventsForDate={getEventsForDate} playerConfig={playerConfig} theme={theme} {...props} />)}</div>
+                <div className="grid grid-cols-7 gap-1 text-center font-semibold text-gray-600 text-sm mb-2">
+                    {weekDays.map(d => <div key={d.toString()}>{WEEK_DAYS[d.getDay()]} {d.getDate()}</div>)}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                    {weekDays.map(dayDate => <CalendarDay key={dayDate.toString()} dayDate={dayDate} type="current" getEventsForDate={getEventsForDate} playerConfig={playerConfig} theme={theme} {...props} />)}
+                </div>
             </div>
         );
     };
 
+    const getMonthTitle = () => {
+        const dateForMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const season = getSeason(dateForMonth);
+        return (
+            <div className="flex items-center justify-center gap-4">
+                <h2 className={`text-3xl font-bold ${theme.header}`}>{MONTH_NAMES[dateForMonth.getMonth()]} {dateForMonth.getFullYear()}</h2>
+                {season.name && <span className={`px-3 py-1 text-xs font-semibold rounded-full ${season.color} text-gray-700`}>{season.name}</span>}
+            </div>
+        );
+    }
+
     const getWeekTitle = () => {
-        const startOfWeek = new Date(currentDate); startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-        const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(endOfWeek.getDate() + 6);
-        return `${MONTH_NAMES[startOfWeek.getMonth()]} ${startOfWeek.getDate()} - ${MONTH_NAMES[endOfWeek.getMonth()]} ${endOfWeek.getDate()}`;
+        const startOfWeek = new Date(currentDate);
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        return (
+            <h2 className={`text-3xl font-bold ${theme.header}`}>
+                {MONTH_NAMES[startOfWeek.getMonth()]} {startOfWeek.getDate()} - {MONTH_NAMES[endOfWeek.getMonth()]} {endOfWeek.getDate()}
+            </h2>
+        );
     };
 
     return (
         <div className={`rounded-2xl shadow-lg p-4 md:p-6 ${theme.calendarBg}`}>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-6">
                 <button onClick={() => changeDate(-1)} className={`p-2 rounded-full ${theme.secondaryButton}`}><ChevronLeft /></button>
-                {/* The redundant "Calendar" title has been removed from here. */}
+                {view.includes('month') ? getMonthTitle() : getWeekTitle()}
                 <button onClick={() => changeDate(1)} className={`p-2 rounded-full ${theme.secondaryButton}`}><ChevronRight /></button>
             </div>
-            <div className="flex flex-col md:flex-row gap-8">{renderMonths()}</div>
+            {view.includes('month') ? (
+                <div className="flex flex-col md:flex-row gap-8">{renderMonths()}</div>
+            ) : (
+                renderWeekView()
+            )}
         </div>
     );
 };
