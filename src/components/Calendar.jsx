@@ -2,7 +2,10 @@ import React from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { MONTH_NAMES, WEEK_DAYS, getSeason, dateToISO } from '../constants/appConstants';
 
-const CalendarDay = ({ dayDate, type, getEventsForDate, playerConfig, theme, ...props }) => {
+// By wrapping CalendarDay in React.memo, we prevent it from re-rendering
+// if its specific props (like events for that day) haven't changed,
+// even if the parent Calendar component re-renders.
+const CalendarDay = React.memo(({ dayDate, type, getEventsForDate, playerConfig, theme, ...props }) => {
     const dayEvents = getEventsForDate(dayDate);
     const isToday = dateToISO(new Date()) === dateToISO(dayDate);
     const dateStr = dateToISO(dayDate);
@@ -37,7 +40,7 @@ const CalendarDay = ({ dayDate, type, getEventsForDate, playerConfig, theme, ...
             </div>
         </div>
     );
-};
+});
 
 export const Calendar = ({ view, currentDate, setCurrentDate, events, playerConfig, theme, ...props }) => {
     const changeDate = (amount) => {
