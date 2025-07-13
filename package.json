@@ -10,7 +10,7 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist --dest apps/RinkSynch --repo https://github.com/digodevmaster/DiGoConsultancy-Website.git"
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "firebase": "^11.10.0",

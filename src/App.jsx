@@ -6,13 +6,13 @@ import { ChevronLeft, ChevronRight, Plus, X, Tag, User, Repeat, Info, Settings, 
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
-    apiKey: "AIzaSyDSh23j3GUG3B75GBG9JrtHWFFnGQpRc_c",
-    authDomain: "rinksync-data.firebaseapp.com",
-    projectId: "rinksync-data",
-    storageBucket: "rinksync-data.firebasestorage.app",
-    messagingSenderId: "314288698038",
-    appId: "1:314288698038:web:fd90b95489a4584429ac17",
-    measurementId: "G-5V5SLSYYTT"
+    apiKey: import.meta.env.VITE_API_KEY,
+    authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_APP_ID,
+    measurementId: import.meta.env.VITE_MEASUREMENT_ID
 };
 
 // --- Initialize Firebase ---
