@@ -128,26 +128,33 @@ const CalendarComponent = ({ view, currentDate, setCurrentDate, events, playerCo
         );
     };
 
-    const getMonthTitle = () => {
-        const dateForMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const season = getSeason(dateForMonth);
+    // This function now correctly renders the main title for all views.
+    const renderTitle = () => {
+        let title;
+        let season;
+
+        if (view.includes('month')) {
+            const dateForMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            season = getSeason(dateForMonth);
+            title = `${MONTH_NAMES[dateForMonth.getMonth()]} ${dateForMonth.getFullYear()}`;
+        } else { // 'week' view
+            const startOfWeek = new Date(currentDate);
+            startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(endOfWeek.getDate() + 6);
+
+            if (startOfWeek.getMonth() === endOfWeek.getMonth()) {
+                title = `${MONTH_NAMES[startOfWeek.getMonth()]} ${startOfWeek.getDate()} - ${endOfWeek.getDate()}`;
+            } else {
+                title = `${MONTH_NAMES[startOfWeek.getMonth()]} ${startOfWeek.getDate()} - ${MONTH_NAMES[endOfWeek.getMonth()]} ${endOfWeek.getDate()}`;
+            }
+        }
+
         return (
             <div className="flex items-center justify-center gap-4">
-                <h2 className={`text-3xl font-bold ${theme.header}`}>{MONTH_NAMES[dateForMonth.getMonth()]} {dateForMonth.getFullYear()}</h2>
-                {season.name && <span className={`px-3 py-1 text-xs font-semibold rounded-full ${season.color} text-gray-700`}>{season.name}</span>}
+                <h2 className={`text-3xl font-bold ${theme.header}`}>{title}</h2>
+                {season && season.name && <span className={`px-3 py-1 text-xs font-semibold rounded-full ${season.color} text-gray-700`}>{season.name}</span>}
             </div>
-        );
-    }
-
-    const getWeekTitle = () => {
-        const startOfWeek = new Date(currentDate);
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
-        return (
-            <h2 className={`text-3xl font-bold ${theme.header}`}>
-                {MONTH_NAMES[startOfWeek.getMonth()]} {startOfWeek.getDate()} - {MONTH_NAMES[endOfWeek.getMonth()]} {endOfWeek.getDate()}
-            </h2>
         );
     };
 
@@ -155,7 +162,8 @@ const CalendarComponent = ({ view, currentDate, setCurrentDate, events, playerCo
         <div className={`rounded-2xl shadow-lg p-4 md:p-6 ${theme.calendarBg}`}>
             <div className="flex justify-between items-center mb-6">
                 <button onClick={() => changeDate(-1)} className={`p-2 rounded-full ${theme.secondaryButton}`}><ChevronLeft /></button>
-                {view.includes('month') ? getMonthTitle() : getWeekTitle()}
+                {/* The new title rendering function is called here */}
+                {renderTitle()}
                 <button onClick={() => changeDate(1)} className={`p-2 rounded-full ${theme.secondaryButton}`}><ChevronRight /></button>
             </div>
             {view.includes('month') ? (
