@@ -2,18 +2,20 @@ import React from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { MONTH_NAMES, WEEK_DAYS, getSeason, dateToISO } from '../constants/appConstants';
 
-// By wrapping CalendarDay in React.memo, we prevent it from re-rendering
-// if its specific props (like events for that day) haven't changed,
-// even if the parent Calendar component re-renders. This is the biggest performance win.
+// The CalendarDay component is memoized for performance.
 const CalendarDay = React.memo(({ dayDate, type, getEventsForDate, playerConfig, theme, ...props }) => {
     const dayEvents = getEventsForDate(dayDate);
     const isToday = dateToISO(new Date()) === dateToISO(dayDate);
     const dateStr = dateToISO(dayDate);
 
     return (
-        <div className={`border rounded-md p-1.5 min-h-[120px] flex flex-col relative ${isToday ? theme.todayCell : type === 'current' ? theme.dayCell : theme.otherMonthCell}`} onClick={() => type === 'current' && props.onDateClick(dayDate)}>
-            <span className={`font-bold ${isToday ? 'text-indigo-600' : ''}`}>{dayDate.getDate()}</span>
-            <div className="flex-grow space-y-1 mt-1 overflow-y-auto">
+        // Added theme.cellHoverBg for a consistent hover effect.
+        <div className={`border rounded-lg p-1.5 min-h-[120px] flex flex-col relative transition-colors ${theme.cellHoverBg} ${type === 'current' ? theme.dayCell : theme.otherMonthCell}`} onClick={() => type === 'current' && props.onDateClick(dayDate)}>
+            {/* The "Today" highlight is now a prominent colored circle around the date number. */}
+            <span className={`font-bold w-8 h-8 flex items-center justify-center mb-1 ${isToday ? `bg-indigo-600 text-white rounded-full` : ''}`}>
+                {dayDate.getDate()}
+            </span>
+            <div className="flex-grow space-y-1 overflow-y-auto">
                 {dayEvents.map(event => {
                     const eventStartDate = event.startDate || event.date;
                     const isMultiDay = event.endDate && event.endDate > eventStartDate;
@@ -42,8 +44,8 @@ const CalendarDay = React.memo(({ dayDate, type, getEventsForDate, playerConfig,
     );
 });
 
-// We create the original component here
 const CalendarComponent = ({ view, currentDate, setCurrentDate, events, playerConfig, theme, ...props }) => {
+    // Functions like changeDate, getEventsForDate, etc., remain the same.
     const changeDate = (amount) => {
         const newDate = new Date(currentDate);
         if (view === 'week') newDate.setDate(newDate.getDate() + (amount * 7));
@@ -84,7 +86,11 @@ const CalendarComponent = ({ view, currentDate, setCurrentDate, events, playerCo
 
             return (
                 <div key={i} className="flex-1">
-                    <div className="text-center mb-2"><h3 className={`text-xl font-bold ${theme.modalTextColor}`}>{MONTH_NAMES[dateForMonth.getMonth()]} {dateForMonth.getFullYear()}</h3><span className={`px-3 py-1 text-sm font-semibold rounded-full ${season.color} text-gray-700`}>{season.name}</span></div>
+                    {/* The new, improved title section. */}
+                    <div className="flex items-center gap-4 mb-4">
+                        <h3 className={`text-2xl font-bold ${theme.modalTextColor}`}>{MONTH_NAMES[dateForMonth.getMonth()]} {dateForMonth.getFullYear()}</h3>
+                        {season.name && <span className={`px-3 py-1 text-xs font-semibold rounded-full ${season.color} text-gray-700`}>{season.name}</span>}
+                    </div>
                     <div className="grid grid-cols-7 gap-1 text-center font-semibold text-gray-600 text-sm mb-2">{WEEK_DAYS.map(day => <div key={day}>{day}</div>)}</div>
                     <div className="grid grid-cols-7 gap-1">{grid.map(({ date, type }, index) => <CalendarDay key={index} dayDate={date} type={type} getEventsForDate={getEventsForDate} playerConfig={playerConfig} theme={theme} {...props} />)}</div>
                 </div>
@@ -111,17 +117,15 @@ const CalendarComponent = ({ view, currentDate, setCurrentDate, events, playerCo
     };
 
     return (
-        <div className={`rounded-lg shadow-lg p-4 md:p-6 ${theme.calendarBg}`}>
+        <div className={`rounded-2xl shadow-lg p-4 md:p-6 ${theme.calendarBg}`}>
             <div className="flex justify-between items-center mb-4">
                 <button onClick={() => changeDate(-1)} className={`p-2 rounded-full ${theme.secondaryButton}`}><ChevronLeft /></button>
-                <div className="text-center"><h2 className={`text-2xl font-bold ${theme.modalTextColor}`}>{view === 'week' ? getWeekTitle() : `Calendar`}</h2></div>
+                {/* The redundant "Calendar" title has been removed from here. */}
                 <button onClick={() => changeDate(1)} className={`p-2 rounded-full ${theme.secondaryButton}`}><ChevronRight /></button>
             </div>
-            {view.includes('month') && <div className="flex flex-col md:flex-row gap-4">{renderMonths()}</div>}
-            {view === 'week' && renderWeekView()}
+            <div className="flex flex-col md:flex-row gap-8">{renderMonths()}</div>
         </div>
     );
 };
 
-// Then we export the memoized version of the component.
 export const Calendar = React.memo(CalendarComponent);

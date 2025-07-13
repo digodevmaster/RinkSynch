@@ -1,9 +1,9 @@
 import React from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { collection, doc, onSnapshot, setDoc, deleteDoc, query } from 'firebase/firestore';
-import { Plus, Settings, LogIn, LogOut } from 'lucide-react';
+import { Plus, Settings, LogIn } from 'lucide-react';
 
-// Import all our new separated modules
+// Import all our modules
 import { auth, db, googleProvider, appId } from './firebase/config';
 import { themes } from './constants/themes';
 import { DEFAULT_PLAYER_CONFIG } from './constants/appConstants';
@@ -12,8 +12,8 @@ import { EventModal } from './components/EventModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { FilterControls } from './components/FilterControls';
+import { UserMenu } from './components/UserMenu'; // Import the new UserMenu
 
-// Create a context to pass the theme down to all components
 export const ThemeContext = React.createContext();
 
 export default function App() {
@@ -23,6 +23,7 @@ export default function App() {
     const [themeName, setThemeName] = React.useState('classic');
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = React.useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false); // State for the new menu
     const [selectedEvent, setSelectedEvent] = React.useState(null);
     const [selectedDate, setSelectedDate] = React.useState(null);
     const [filters, setFilters] = React.useState({ player: 'all', eventType: 'all' });
@@ -52,94 +53,35 @@ export default function App() {
             setThemeName('classic');
             return;
         }
-
         const playerConfigDocRef = doc(db, `artifacts/${appId}/users/${userId}/config`, 'players');
         const unsubscribePlayers = onSnapshot(playerConfigDocRef, (doc) => {
-            if (doc.exists()) {
-                setPlayerConfig(doc.data());
-            } else {
-                setDoc(playerConfigDocRef, DEFAULT_PLAYER_CONFIG);
-            }
+            if (doc.exists()) { setPlayerConfig(doc.data()); } else { setDoc(playerConfigDocRef, DEFAULT_PLAYER_CONFIG); }
         });
-
         const uiConfigDocRef = doc(db, `artifacts/${appId}/users/${userId}/config`, 'ui');
         const unsubscribeUi = onSnapshot(uiConfigDocRef, (doc) => {
-            if (doc.exists() && doc.data().theme && themes[doc.data().theme]) {
-                setThemeName(doc.data().theme);
-            } else {
-                setThemeName('classic');
-            }
+            if (doc.exists() && doc.data().theme && themes[doc.data().theme]) { setThemeName(doc.data().theme); } else { setThemeName('classic'); }
         });
-
         const eventsCollectionPath = `artifacts/${appId}/users/${userId}/events`;
         const q = query(collection(db, eventsCollectionPath));
         const unsubscribeEvents = onSnapshot(q, (snapshot) => {
             setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
-
-        return () => {
-            unsubscribePlayers();
-            unsubscribeUi();
-            unsubscribeEvents();
-        };
+        return () => { unsubscribePlayers(); unsubscribeUi(); unsubscribeEvents(); };
     }, [isAuthReady, userId]);
 
-    const handleGoogleSignIn = async () => {
-        try {
-            await signInWithPopup(auth, googleProvider);
-        } catch (error) {
-            console.error("Google sign-in failed:", error);
-        }
-    };
 
-    const handleSignOut = async () => {
-        try {
-            await signOut(auth);
-        } catch (error) {
-            console.error("Sign-out failed:", error);
-        }
-    };
+    // Handler functions
+    const handleGoogleSignIn = async () => { try { await signInWithPopup(auth, googleProvider); } catch (error) { console.error("Google sign-in failed:", error); } };
+    const handleSignOut = async () => { try { await signOut(auth); setIsUserMenuOpen(false); } catch (error) { console.error("Sign-out failed:", error); } };
+    const handleSavePlayerConfig = async (newConfig) => { if (userId) await setDoc(doc(db, `artifacts/${appId}/users/${userId}/config`, 'players'), newConfig); };
+    const handleSaveTheme = async (newThemeName) => { if (userId) await setDoc(doc(db, `artifacts/${appId}/users/${userId}/config`, 'ui'), { theme: newThemeName }); };
+    const handleSaveEvent = async (eventData) => { if (userId) await setDoc(doc(db, `artifacts/${appId}/users/${userId}/events`, eventData.id), eventData); };
+    const handleDeleteRequest = (eventId) => { setEventToDelete(eventId); setIsConfirmModalOpen(true); };
+    const confirmDeleteEvent = async () => { if (userId && eventToDelete) { await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/events`, eventToDelete)); } setIsConfirmModalOpen(false); setEventToDelete(null); };
+    const handleDateClick = (date) => { setSelectedDate(date); setSelectedEvent(null); setIsModalOpen(true); };
+    const handleEventClick = (event) => { setSelectedEvent(event); setSelectedDate(null); setIsModalOpen(true); };
+    const handleFilterChange = (name, value) => { setFilters(prev => ({ ...prev, [name]: value })); };
 
-    const handleSavePlayerConfig = async (newConfig) => {
-        if (userId) await setDoc(doc(db, `artifacts/${appId}/users/${userId}/config`, 'players'), newConfig);
-    };
-
-    const handleSaveTheme = async (newThemeName) => {
-        if (userId) await setDoc(doc(db, `artifacts/${appId}/users/${userId}/config`, 'ui'), { theme: newThemeName });
-    };
-
-    const handleSaveEvent = async (eventData) => {
-        if (userId) await setDoc(doc(db, `artifacts/${appId}/users/${userId}/events`, eventData.id), eventData);
-    };
-
-    const handleDeleteRequest = (eventId) => {
-        setEventToDelete(eventId);
-        setIsConfirmModalOpen(true);
-    };
-
-    const confirmDeleteEvent = async () => {
-        if (userId && eventToDelete) {
-            await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/events`, eventToDelete));
-        }
-        setIsConfirmModalOpen(false);
-        setEventToDelete(null);
-    };
-
-    const handleDateClick = (date) => {
-        setSelectedDate(date);
-        setSelectedEvent(null);
-        setIsModalOpen(true);
-    };
-
-    const handleEventClick = (event) => {
-        setSelectedEvent(event);
-        setSelectedDate(null);
-        setIsModalOpen(true);
-    };
-
-    const handleFilterChange = (name, value) => {
-        setFilters(prev => ({ ...prev, [name]: value }));
-    };
 
     const filteredEvents = React.useMemo(() => {
         return events.filter(event =>
@@ -160,27 +102,19 @@ export default function App() {
         <ThemeContext.Provider value={theme}>
             <div className={`${theme.bg} min-h-screen p-2 sm:p-4 md:p-8 font-sans`}>
                 <div className="max-w-7xl mx-auto">
-                    {/* The header now uses flex-col on mobile and md:flex-row on medium screens and up */}
-                    <header className="flex flex-col md:flex-row justify-between items-center mb-6">
-                        <div className="text-center md:text-left">
-                            <h1 className={`text-3xl sm:text-4xl font-bold ${theme.header}`}>RinkSync</h1>
-                        </div>
-                        {/* User controls also stack and have adjusted margins for mobile */}
-                        <div className="flex items-center flex-wrap justify-center gap-2 sm:gap-4 mt-4 md:mt-0">
+                    <header className="flex justify-between items-center mb-8">
+                        <h1 className={`text-3xl sm:text-4xl font-bold ${theme.header}`}>RinkSync</h1>
+                        <div className="flex items-center gap-4">
                             {user ? (
-                                <>
-                                    <button onClick={() => { setSelectedEvent(null); setSelectedDate(new Date()); setIsModalOpen(true); }} className={`flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base font-semibold rounded-lg shadow-md transition-colors ${theme.primaryButton}`}><Plus size={20} /> New Event</button>
-                                    <button onClick={() => setIsSettingsModalOpen(true)} className={`flex items-center gap-2 p-2 sm:px-4 sm:py-3 font-semibold rounded-lg transition-colors ${theme.secondaryButton}`}><Settings size={20} /></button>
-                                    <div className="flex items-center gap-3">
-                                        <img src={user.photoURL} alt={user.displayName} className="w-10 h-10 rounded-full border-2 border-gray-300" />
-                                        <span className={`hidden sm:block font-semibold ${theme.header}`}>
-                                            Hi, {user.displayName ? user.displayName.split(' ')[0] : 'User'}!
-                                        </span>
-                                    </div>
-                                    <button onClick={handleSignOut} className={`flex items-center gap-2 p-2 sm:px-4 sm:py-3 font-semibold rounded-lg transition-colors ${theme.secondaryButton}`}><LogOut size={20} /></button>
-                                </>
+                                <div className="relative">
+                                    <button onClick={() => setIsSettingsModalOpen(true)} className={`p-2 rounded-full transition-colors ${theme.secondaryButton}`}><Settings size={22} /></button>
+                                    <button onClick={() => setIsUserMenuOpen(prev => !prev)} className="w-10 h-10 rounded-full border-2 border-white/50 ring-2 ring-transparent hover:ring-indigo-400 transition-all">
+                                        <img src={user.photoURL} alt={user.displayName} className="w-full h-full rounded-full" />
+                                    </button>
+                                    {isUserMenuOpen && <UserMenu user={user} onSignOut={handleSignOut} onClose={() => setIsUserMenuOpen(false)} theme={theme} />}
+                                </div>
                             ) : (
-                                <button onClick={handleGoogleSignIn} className={`flex items-center gap-2 px-6 py-3 font-semibold rounded-lg shadow-md transition-colors ${theme.primaryButton}`}><LogIn size={20} /> Sign in with Google</button>
+                                <button onClick={handleGoogleSignIn} className={`flex items-center gap-2 px-6 py-3 font-semibold rounded-lg shadow-md transition-colors ${theme.primaryButton}`}><LogIn size={20} /> Sign in</button>
                             )}
                         </div>
                     </header>
@@ -188,6 +122,15 @@ export default function App() {
                         <>
                             <FilterControls filters={filters} onFilterChange={handleFilterChange} view={view} setView={setView} playerConfig={playerConfig} theme={theme} />
                             <Calendar events={filteredEvents} onDateClick={handleDateClick} onEventClick={handleEventClick} onEventDelete={handleDeleteRequest} view={view} currentDate={currentDate} setCurrentDate={setCurrentDate} playerConfig={playerConfig} theme={theme} />
+
+                            {/* Floating Action Button for "New Event" */}
+                            <button
+                                onClick={() => { setSelectedEvent(null); setSelectedDate(new Date()); setIsModalOpen(true); }}
+                                className={`fixed bottom-8 right-8 w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 ${theme.primaryButton}`}
+                                aria-label="Add New Event"
+                            >
+                                <Plus size={32} />
+                            </button>
                         </>
                     )}
 
