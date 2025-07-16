@@ -152,7 +152,7 @@ const CalendarComponent = ({ view, currentDate, setCurrentDate, events, playerCo
 
         return (
             <div className="flex items-center justify-center gap-4">
-                <h2 className={`text-3xl font-bold ${theme.header}`}>{title}</h2>
+                <h2 className={`text-3xl font-bold ${theme.modalTextColor}`}>{title}</h2>
                 {season && season.name && <span className={`px-3 py-1 text-xs font-semibold rounded-full ${season.color} text-gray-700`}>{season.name}</span>}
             </div>
         );
